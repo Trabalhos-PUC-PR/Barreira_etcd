@@ -16,8 +16,9 @@ def getValor(chave):
 
 def callback(_):
     latest = getValor(chave)
-    print(f'latest={latest}|processo={processo}')
+    #print(f'latest={latest}|processo={processo}')
     if(latest >= processo):
+        print(f'todos os processos iniciaram, liberando acesso à barreira')
         pre_lock.release()
 
 for i in range(processo):
