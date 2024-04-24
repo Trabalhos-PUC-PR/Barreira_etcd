@@ -7,8 +7,6 @@ import random
 processo = (int) (argv[1])
 client = etcd3.client()
 chave = 'latest'
-chave_uuid = 'uuid'
-uuid = ''
 locks = []
 lock = ""
 pre_lock = ""
@@ -22,12 +20,8 @@ def callback(_):
     if(latest >= processo):
         pre_lock.release()
 
-if(client.get(chave_uuid)[0]) == None:
-    client.put(chave_uuid, (str)(random.randint(1, 10000)))
-uuid = ((str)(client.get(chave_uuid)[0]))
-
 for i in range(processo):
-    locks.append(client.lock(((str)(i))+uuid))
+    locks.append(client.lock((str)(i)))
 pre_lock = client.lock("pre")
 if not(pre_lock.is_acquired()):
     pre_lock.acquire(0)
