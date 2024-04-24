@@ -2,32 +2,51 @@
 import etcd3
 import time
 from sys import argv
+import random
 
 processo = (int) (argv[1])
 client = etcd3.client()
-
 chave = 'latest'
+chave_uuid = 'uuid'
+uuid = ''
 locks = []
 lock = ""
+pre_lock = ""
+
+def getValor(chave):
+    return ((int)(client.get(chave)[0])) 
+
+def callback(_):
+    latest = getValor(chave)
+    print(f'latest={latest}|processo={processo}')
+    if(latest >= processo):
+        pre_lock.release()
+
+if(client.get(chave_uuid)[0]) == None:
+    client.put(chave_uuid, (str)(random.randint(1, 10000)))
+uuid = ((str)(client.get(chave_uuid)[0]))
+
 for i in range(processo):
-    locks.append(client.lock((str)(i)))
+    locks.append(client.lock(((str)(i))+uuid))
+pre_lock = client.lock("pre")
+if not(pre_lock.is_acquired()):
+    pre_lock.acquire(0)
 
 for i in locks:
     if i.acquire(timeout = 0.1):
         lock = i
+        client.add_watch_callback(chave, callback)
         client.put(chave, (str)(locks.index(i)+1))
         break
 
-print(f'processo #{((int)(client.get(chave)[0]))}')
+print(f'\tprocesso #{((int)(client.get(chave)[0]))}')
 for i in range(10):
     print(i+1)
     time.sleep(1)
 
-print("Esperando outros processos começarem para chegar na barreira")
-
-while(((int)(client.get(chave)[0])) != processo):
-    pass
-    
+print(f"Esperando todos os {processo} processos começarem")
+pre_lock.acquire(None)
+pre_lock.release()
 print("Chegou na barreira")
 lock.release()
 
